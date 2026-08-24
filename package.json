@@ -1,0 +1,9 @@
+{
+  "name": "perpetual-newsletter",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Perpetual Labs research newsletter — server-side password-gated on Vercel",
+  "dependencies": {
+    "@vercel/edge": "^1.2.1"
+  }
+}
