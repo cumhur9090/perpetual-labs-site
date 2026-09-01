@@ -1,6 +1,6 @@
 import { get } from '@vercel/blob';
-
-export const config = { runtime: 'edge' };
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 const enc = new TextEncoder();
 
@@ -71,11 +71,17 @@ async function isAuthenticated(req) {
   }
 }
 
-function gateRedirect(req) {
+function send(res, status, body, headers = {}) {
+  res.statusCode = status;
+  for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+  res.end(body);
+}
+
+function gateRedirect(req, res) {
   const requested = requestUrl(req);
   const gate = new URL('/gate.html', requested.origin);
   gate.searchParams.set('next', requested.pathname + requested.search);
-  return Response.redirect(gate, 307);
+  return send(res, 307, '', { Location: gate.toString(), 'Cache-Control': 'private, no-store' });
 }
 
 function validPath(pathname) {
@@ -94,29 +100,26 @@ function disposition(pathname, contentType) {
   return `${inline ? 'inline' : 'attachment'}; filename="${filename}"`;
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
+    return send(res, 405, 'Method Not Allowed', { Allow: 'GET, HEAD' });
   }
-  if (!(await isAuthenticated(req))) return gateRedirect(req);
+  if (!(await isAuthenticated(req))) return gateRedirect(req, res);
 
   const url = requestUrl(req);
   const pathname = url.searchParams.get('path') || '';
-  if (!validPath(pathname)) return new Response('Not Found', { status: 404 });
+  if (!validPath(pathname)) return send(res, 404, 'Not Found');
 
   const result = await get(pathname, {
     access: 'private',
     ifNoneMatch: requestHeader(req, 'if-none-match') || undefined,
   });
-  if (!result || result.statusCode === 404) return new Response('Not Found', { status: 404 });
+  if (!result || result.statusCode === 404) return send(res, 404, 'Not Found');
   if (result.statusCode === 304) {
-    return new Response(null, {
-      status: 304,
-      headers: {
-        ETag: result.blob.etag,
-        'Cache-Control': 'private, no-cache',
-        'X-Robots-Tag': 'noindex, nofollow',
-      },
+    return send(res, 304, '', {
+      ETag: result.blob.etag,
+      'Cache-Control': 'private, no-cache',
+      'X-Robots-Tag': 'noindex, nofollow',
     });
   }
 
@@ -129,6 +132,8 @@ export default async function handler(req) {
     'X-Robots-Tag': 'noindex, nofollow',
     ETag: result.blob.etag,
   };
-  if (req.method === 'HEAD') return new Response(null, { status: 200, headers });
-  return new Response(result.stream, { status: 200, headers });
+  res.statusCode = 200;
+  for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+  if (req.method === 'HEAD') return res.end();
+  await pipeline(Readable.fromWeb(result.stream), res);
 }
