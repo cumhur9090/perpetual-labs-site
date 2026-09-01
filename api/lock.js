@@ -4,7 +4,10 @@
 export const config = { runtime: 'edge' };
 
 export default function handler(req) {
-  const origin = new URL(req.url).origin;
+  const url = new URL(req.url);
+  const origin = url.origin;
+  const requested = url.searchParams.get('next') || '';
+  const nextPath = requested === '/quantbench.html' ? '/quantbench.html' : '/newsletter.html';
   const cookie = 'pl_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
-  return new Response(null, { status: 303, headers: { Location: origin + '/newsletter.html', 'Set-Cookie': cookie } });
+  return new Response(null, { status: 303, headers: { Location: origin + nextPath, 'Set-Cookie': cookie } });
 }

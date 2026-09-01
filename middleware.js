@@ -3,9 +3,9 @@
 // cookie -> the request is rewritten to the public "under construction" page, so
 // the protected content never leaves the server. This is true server-side access
 // control: the ciphertext can't be downloaded and cracked offline.
-import { next, rewrite } from '@vercel/edge';
+import { next } from '@vercel/edge';
 
-export const config = { matcher: ['/newsletter.html', '/newsletter/:path*'] };
+export const config = { matcher: ['/newsletter.html', '/newsletter/:path*', '/quantbench.html'] };
 
 const enc = new TextEncoder();
 function b64url(bytes) {
@@ -46,5 +46,8 @@ export default async function middleware(req) {
     }
   }
   if (authed) return next();
-  return rewrite(new URL('/gate.html', req.url));
+  const requested = new URL(req.url);
+  const gate = new URL('/gate.html', requested.origin);
+  gate.searchParams.set('next', requested.pathname + requested.search);
+  return Response.redirect(gate, 307);
 }

@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Perpetual Labs research newsletter — server-side password-gated on Vercel",
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
     "@vercel/edge": "^1.2.1"
   }
 }

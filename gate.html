@@ -31,6 +31,7 @@
 <body>
 <main>
   <form method="POST" action="/api/unlock">
+    <input id="next" name="next" type="hidden" value="/newsletter.html">
     <div class="field">
       <input id="pw" name="password" type="password" placeholder="password" aria-label="Access password"
         autocomplete="current-password" spellcheck="false" autofocus>
@@ -45,6 +46,8 @@
 <script>
   var t=document.getElementById('tog'),p=document.getElementById('pw');
   t.addEventListener('click',function(){var s=p.type==='password';p.type=s?'text':'password';t.textContent=s?'hide':'show';p.focus();});
-  if(new URLSearchParams(location.search).get('e'))document.getElementById('msg').textContent='Incorrect password.';
+  var params=new URLSearchParams(location.search),next=params.get('next');
+  if(next&&next.charAt(0)==='/'&&next.slice(0,2)!=='//')document.getElementById('next').value=next;
+  if(params.get('e'))document.getElementById('msg').textContent='Incorrect password.';
 </script>
 </body></html>
