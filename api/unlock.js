@@ -1,5 +1,5 @@
-// POST the password -> if it matches NEWSLETTER_PASSWORD, set a signed, HttpOnly
-// session cookie and redirect into the newsletter. The password lives only in an
+// POST the password -> if it matches DATA_PASSWORD, set a signed, HttpOnly
+// session cookie and redirect into the requested general research area. The password lives only in an
 // env var (never shipped to the client); the cookie is an HMAC token, not the
 // password. Wrong guesses are throttled. Runs at the edge.
 export const config = { runtime: 'edge' };
@@ -27,13 +27,14 @@ function safeNext(value) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return '/newsletter.html';
   if (value === '/newsletter.html' || value.startsWith('/newsletter/')) return value;
   if (value === '/quantbench.html') return value;
+  if (value === '/data.html') return value;
   if (value.startsWith('/api/quantbench?path=quantbench%2F') || value.startsWith('/api/quantbench?path=quantbench/')) return value;
   return '/newsletter.html';
 }
 
 export default async function handler(req) {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const expected = process.env.NEWSLETTER_PASSWORD || '';
+  const expected = process.env.DATA_PASSWORD || process.env.NEWSLETTER_PASSWORD || '';
   const secret = process.env.SESSION_SECRET || '';
   const origin = new URL(req.url).origin;
 

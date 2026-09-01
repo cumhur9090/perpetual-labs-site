@@ -21,24 +21,26 @@ perpetual-os.html) is carried over byte-identical from `~/perpetual-site-v3`.
 - `gate.html` — the minimal "under construction" + password page (public).
 - `newsletter.html`, `newsletter/` — the gated content (landing, 17 analyses, 3D brain, PDFs, data). **Served only with a valid session.**
 - `quantbench.html` — a gated catalog shell. Its private catalog, paper, and evaluation samples are loaded only through `api/quantbench.js`.
-- `middleware.js` — Edge Middleware: gates the newsletter and QuantBench catalog; no valid `pl_session` cookie redirects to `gate.html`.
+- `middleware.js` — Edge Middleware: gates the newsletter, QuantBench catalog, and general Data Room; no valid `pl_session` cookie redirects to `gate.html`.
 - `api/unlock.js` — checks the password (env var) and sets an HMAC-signed, HttpOnly, 24h session cookie. Wrong guesses throttled.
 - `api/lock.js` — clears the session (the in-page "lock" link).
 - `api/quantbench.js` — verifies the signed session again before streaming any object from the private `perpetual-labs-quantbench` Blob store.
 - `vercel.json` — headers (noindex + no-store on the gated paths).
 
 ## How the gate works
-Password lives only in the `NEWSLETTER_PASSWORD` env var (never shipped to the
-browser). The session cookie is an HMAC token signed with `SESSION_SECRET`, so it
-can't be forged. Rotating `SESSION_SECRET` invalidates every existing session.
+The shared general-data password lives only in the `DATA_PASSWORD` env var
+(never shipped to the browser). `NEWSLETTER_PASSWORD` remains a legacy fallback.
+The session cookie is an HMAC token signed with `SESSION_SECRET`, so it can't be
+forged. Rotating `SESSION_SECRET` invalidates every existing session. Company-
+specific pages must use their own password and session cookie.
 
 ## Deploy
 1. Import into Vercel (or `vercel --prod`).
 2. Set two **Environment Variables** (Project → Settings → Environment Variables, Production) — see `.env.example`:
-   - `NEWSLETTER_PASSWORD` — the team password.
+   - `DATA_PASSWORD` — the shared general Research and dataset password.
    - `SESSION_SECRET` — a long random string (`openssl rand -hex 32`).
 3. Connect the private `perpetual-labs-quantbench` Blob store so Vercel adds `BLOB_READ_WRITE_TOKEN`.
-4. Deploy. `/` is public; the newsletter and QuantBench pages share the Research password and unlock for 24h.
+4. Deploy. `/` is public; the newsletter, QuantBench, and Data Room pages share the general data password and unlock for 24h.
 
-To change the password: update `NEWSLETTER_PASSWORD` and redeploy. To boot all
+To change the shared password: update `DATA_PASSWORD` and redeploy. To boot all
 sessions: rotate `SESSION_SECRET` and redeploy.

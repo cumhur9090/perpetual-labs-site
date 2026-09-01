@@ -1,11 +1,8 @@
-// Edge Middleware — the real gate. It runs on EVERY request to the newsletter
-// (pages, brain, PDFs, data) BEFORE anything is served. No valid signed session
-// cookie -> the request is rewritten to the public "under construction" page, so
-// the protected content never leaves the server. This is true server-side access
-// control: the ciphertext can't be downloaded and cracked offline.
+// Edge Middleware — the shared gate for general research and dataset routes.
+// Company-specific pages use separate credentials and are intentionally excluded.
 import { next } from '@vercel/edge';
 
-export const config = { matcher: ['/newsletter.html', '/newsletter/:path*', '/quantbench.html'] };
+export const config = { matcher: ['/newsletter.html', '/newsletter/:path*', '/quantbench.html', '/data.html'] };
 
 const enc = new TextEncoder();
 function b64url(bytes) {
