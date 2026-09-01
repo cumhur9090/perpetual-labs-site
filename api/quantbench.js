@@ -1,5 +1,7 @@
 import { get } from '@vercel/blob';
 
+export const config = { runtime: 'edge' };
+
 const enc = new TextEncoder();
 
 function b64url(bytes) {
