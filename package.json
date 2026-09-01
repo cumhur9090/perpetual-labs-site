@@ -1,6 +1,7 @@
 {
   "name": "perpetual-newsletter",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "description": "Perpetual Labs research newsletter — server-side password-gated on Vercel",
   "dependencies": {

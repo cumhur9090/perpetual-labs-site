@@ -35,9 +35,25 @@ function cookieVal(header, name) {
   return '';
 }
 
+function requestHeader(req, name) {
+  if (req.headers && typeof req.headers.get === 'function') return req.headers.get(name) || '';
+  const value = req.headers && req.headers[name.toLowerCase()];
+  return Array.isArray(value) ? value.join(', ') : (value || '');
+}
+
+function requestUrl(req) {
+  try {
+    return new URL(req.url);
+  } catch (_) {
+    const host = requestHeader(req, 'x-forwarded-host') || requestHeader(req, 'host') || 'localhost';
+    const protocol = requestHeader(req, 'x-forwarded-proto') || 'https';
+    return new URL(req.url || '/', `${protocol}://${host}`);
+  }
+}
+
 async function isAuthenticated(req) {
   const secret = process.env.SESSION_SECRET || '';
-  const value = cookieVal(req.headers.get('cookie'), 'pl_session');
+  const value = cookieVal(requestHeader(req, 'cookie'), 'pl_session');
   if (!value || !secret) return false;
 
   const dot = value.lastIndexOf('.');
@@ -54,7 +70,7 @@ async function isAuthenticated(req) {
 }
 
 function gateRedirect(req) {
-  const requested = new URL(req.url);
+  const requested = requestUrl(req);
   const gate = new URL('/gate.html', requested.origin);
   gate.searchParams.set('next', requested.pathname + requested.search);
   return Response.redirect(gate, 307);
@@ -82,13 +98,13 @@ export default async function handler(req) {
   }
   if (!(await isAuthenticated(req))) return gateRedirect(req);
 
-  const requestUrl = new URL(req.url);
-  const pathname = requestUrl.searchParams.get('path') || '';
+  const url = requestUrl(req);
+  const pathname = url.searchParams.get('path') || '';
   if (!validPath(pathname)) return new Response('Not Found', { status: 404 });
 
   const result = await get(pathname, {
     access: 'private',
-    ifNoneMatch: req.headers.get('if-none-match') || undefined,
+    ifNoneMatch: requestHeader(req, 'if-none-match') || undefined,
   });
   if (!result || result.statusCode === 404) return new Response('Not Found', { status: 404 });
   if (result.statusCode === 304) {
